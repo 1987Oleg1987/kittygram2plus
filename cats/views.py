@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets
 from rest_framework.throttling import ScopedRateThrottle
 
 from .models import Achievement, Cat, User
@@ -14,8 +15,23 @@ class CatViewSet(viewsets.ModelViewSet):
     permission_classes = (OwnerOrReadOnly,)  # Устанавливаем разрешение
     # throttle_classes = (AnonRateThrottle,)  # Подключили класс AnonRateThrottle
     throttle_classes = (WorkingHoursRateThrottle, ScopedRateThrottle)
-    throttle_scope = 'low_request'
+    # throttle_scope = 'low_request'
     pagination_class = CatsPagination  # PageNumberPagination
+    # Указываем фильтрующий бэкенд DjangoFilterBackend из библиотеки django-filter
+    filter_backends = (
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    )
+    # Фильтровать будем по полям color и birth_year модели Cat
+    filterset_fields = ('color', 'birth_year')
+    search_fields = (
+        'name',
+        'achievements__name',
+        'owner__username',
+    )  # ('^name',)
+    ordering_fields = ('name', 'birth_year')
+    ordering = ('birth_year',)  # Порядок сортировки по умолчанию
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
